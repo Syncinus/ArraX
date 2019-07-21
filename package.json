@@ -1,0 +1,21 @@
+{
+  "name": "arras",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "bash start.sh",
+    "run": "node server"
+  },
+  "dependencies": {
+    "ws": "^7.1.0",
+    "nanotimer": "^0.3.15",
+    "fast-sort": "^1.5.6"
+  },
+  "optionalDependencies": {
+    "discord.js": "11.3.x"
+  },
+  "engines": {
+    "node": "12.3.1"
+  }
+}
