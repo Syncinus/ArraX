@@ -4,8 +4,7 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "bash start.sh",
-    "run": "node server"
+    "start": "node --gc_interval=100 server"
   },
   "dependencies": {
     "ws": "^7.1.0",
