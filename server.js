@@ -5933,6 +5933,7 @@ Sockets.New = (socket, req) => {
                                 * (there will be), we'll end up pushing a bunch of
                                 * excessive updates long after the first and only
                                 * needed one as it slowly hits each updated value
+				*/
 
                         for (let e of vars)
                             if (e.publish() != null)
@@ -5968,6 +5969,7 @@ Sockets.New = (socket, req) => {
                             * we're forever sending repeated data when we don't
                             * need to. This way we can flag it as already sent
                             * regardless of if we had an update cycle.
+			    */
 
                     publish: () => {
                         if (out.length) { let o = out.splice(0, out.length); out = []; return o; }
