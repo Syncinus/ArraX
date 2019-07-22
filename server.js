@@ -5778,7 +5778,7 @@ const fs = require('fs');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const app = express();
-const PORT = SECRET.PORT || 8080;
+const PORT = SECRET.PORT || ;
 const http = require('http');
 const server = http.createServer(app);
 const io = require('socket.io')(server);
@@ -8011,7 +8011,7 @@ let server = http.createServer((req, res) => {
     }
 })
 
-server.listen(SECRET.PORT || 8080, function httpListening() {
+server.listen(process.env.PORT || SECRET.PORT || 8080, function httpListening() {
     util.log((new Date()) + ". Server listening on port " + server.address().port)
 })
 
