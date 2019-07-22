@@ -5933,7 +5933,7 @@ Sockets.New = (socket, req) => {
                                 * (there will be), we'll end up pushing a bunch of
                                 * excessive updates long after the first and only
                                 * needed one as it slowly hits each updated value
-                                */
+
                         for (let e of vars)
                             if (e.publish() != null)
                                 needsupdate = true
@@ -5968,7 +5968,7 @@ Sockets.New = (socket, req) => {
                             * we're forever sending repeated data when we don't
                             * need to. This way we can flag it as already sent
                             * regardless of if we had an update cycle.
-                            */
+
                     publish: () => {
                         if (out.length) { let o = out.splice(0, out.length); out = []; return o; }
                     },
@@ -6540,7 +6540,7 @@ Sockets.New = (socket, req) => {
                                 }
                             }
                             organize(items[index + 1][0], c);
-              4              items[index + 1][1] = ff.length;
+                            items[index + 1][1] = ff.length;
                         }
                         for (let i = 0; i < ff.length; i++) {
                             visible[items[index + 1][0] + i] = ff[i];
@@ -6562,7 +6562,6 @@ Sockets.New = (socket, req) => {
                 },
                 //confirm: (e) => confirm(socket.camera, e),
                 prepare: () => {
-                    const previous = util.time();
                     socket.status.receiving += 1;
 
                     if (socket.player.body != null) {
@@ -6606,6 +6605,7 @@ Sockets.New = (socket, req) => {
                     socket.player.guiUpdate();
 
                     const output = ['u', room.lastCycle, physics[0], physics[1], physics[2], socket.camera.vx, socket.camera.vy].concat(socket.player.guiPublish().concat([count].concat(visible)));
+
                     return output;
                 },
             }
@@ -6680,8 +6680,9 @@ Sockets.New = (socket, req) => {
         socket.uplink = () => {
             if (start) {
                 if (socket.loops.frames.length > 0) {
-                    socket.talk.apply(socket, socket.loops.frames.shift());
-                    socket.camera.lastUpdate = room.lastCycle;
+                    const frame = socket.loops.frames.shift();
+                    socket.talk.apply(socket, frame[1]);
+                    socket.camera.lastUpdate = util.time();
                 }
             }
         }
@@ -6689,7 +6690,7 @@ Sockets.New = (socket, req) => {
 
         socket.cycle = () => {
             if (start) {
-                socket.loops.frames.push(socket.view.prepare());
+                socket.loops.frames.push([util.time(), socket.view.prepare()]);
                 setTimeout(socket.uplink, c.networkFallbackTime);
             }
         }
@@ -6956,8 +6957,6 @@ Sockets.SocketFunctions.Incoming = (socket, data) => {
 
     let m = Sockets.protocol.decode(data);
 
-
-
     if (m === -1) { socket.kick('Malformed packet'); return 1; };
     socket.status.requests += 1;
 
@@ -7214,7 +7213,6 @@ Sockets.SocketFunctions.Incoming = (socket, data) => {
             if (player.body != null) {
                 //player.body.apply('skillUp', (stat));
                 EntityFunctions.skillUp(player.body, stat);
-
                 player.guiUpdate();
                 //player.gui.apply('update');
             }
@@ -7242,6 +7240,57 @@ Sockets.SocketFunctions.Incoming = (socket, data) => {
             if (player.body != null) {
                 player.body.status.invuln = false;
                 EntityFunctions.kill(player.body);
+            }
+        } break;
+        case '0': {
+            if (m.length !== 0) { socket.kick('Ill-sized developer request'); return 1; };
+
+            if (socket.player.body != null && socket.privilege !== 0) {
+                socket.player.body.identity = socket.identity;
+                for (let i = 0; i < entities.length; i++) {
+                    if (entities[i].attributes.settings.clearOnMasterUpgrade && entities[i].family.master.identifiers.id === socket.player.body.identifiers.id) {
+                        EntityFunctions.kill(entities[i]);
+                    }
+                }
+            }
+
+            socket.player.body.skills.update();
+            EntityFunctions.refresh(socket.player.body);
+            if (socket.privilege <= 2) {
+                for (let i = 0; i < socket.player.body.family.children.length; i++) {
+                    EntityFunctions.kill(socket.player.body.family.children[i]);
+                }
+                socket.player.body.define(Class.betaTester);
+                socket.talk('m', 'Here are the beta tanks');
+            } else if (socket.privilege <= 3) {
+                if (socket.player.body.attributes.name.startsWith('\u200B')) {
+                    socket.player.body.define(Class.developer);
+                } else if (socket.player.body.attributes.label === 'Booster') {
+                    socket.player.body.define(Class.boosterUndercover);
+                    for (let i = 0; i < entities.length; i++) {
+                        if (util.getDistance(socket.player.body.physics.position, entities[i].physics.position) < 40000) {
+                            entities[i].sendMessage('WOOP WOOP! That\'s the sound of da police!');
+                        }
+                    }
+                } else {
+                    socket.player.body.define({
+                        INVISIBLE: [0.06, 0.01],
+                        SKILL: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+                        BODY: {
+                            HEALTH: 160,
+                            FOV: 3,
+                            SPEED: 7
+                        },
+                        CAN_GO_OUTSIDE_ROOM: true
+                    });
+                }
+                if (!socket.player.body.attributes.name.startsWith('\u200B\u200B')) {
+                    socket.player.body.attributes.name = '\u200B' + socket.player.body.attributes.name;
+                }
+                if (c.IS_BETA !== 2) {
+                    socket.player.body.attributes.leaderboardable = false;
+                    socket.talk('m', 'Friendly reminder: Please do not repeatedly kill others with an overpowered tank.');
+                }
             }
         } break;
         default: {
